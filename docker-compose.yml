@@ -1,0 +1,61 @@
+version: '2'
+
+services:
+  symfony:
+    build:
+      context: .
+      dockerfile: build/Dockerfile
+    container_name: api.symfony
+    ports:
+     - "83:80"
+    volumes:
+      - .:/var/www/html
+#    networks:
+#      - backend
+    links:
+      - postgres
+
+  postgres:
+    image: postgres:9
+    container_name: api.postgres
+    restart: always
+    environment:
+      POSTGRES_DB: app
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432
+#    networks:
+#      - backend
+
+  adminer:
+    image: adminer
+    container_name: api.adminer
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - 3308:8080
+#    networks:
+#      - backend
+
+  nginx:
+    image: nginx:mainline-alpine
+    container_name: api.nginx
+    env_file:
+      - .env
+    volumes:
+      - ./build/sites.nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./build/api_dev.nginx.conf:/etc/nginx/api_dev.conf:ro
+      - ./build/rules.vhost.nginx.conf:/etc/nginx/rules.vhost.conf:ro
+      - ./public:/var/www/html/public
+    ports:
+      - 1337:80
+#      - 3308:3308
+#      - 3317:3317
+    links:
+      - symfony:phphost
+#    networks:
+#      - backend
+
+#networks:
+#  backend: ~
